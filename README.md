@@ -10,7 +10,7 @@ Unicode-aware slug generation for URL-safe strings.
 
 ```toml
 [dependencies]
-philiprehberger-slug = "0.1.5"
+philiprehberger-slug = "0.1.6"
 ```
 
 ## Usage
@@ -43,6 +43,14 @@ let slug = SlugBuilder::new()
 | `.max_length(usize)` | Set maximum slug length with word-boundary truncation |
 | `.replacement(char, &str)` | Add a custom character replacement |
 | `.slugify(&self, input)` | Generate a slug with the configured settings |
+
+
+## Development
+
+```bash
+cargo test
+cargo clippy -- -D warnings
+```
 
 ## License
 
