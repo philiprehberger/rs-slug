@@ -10,7 +10,7 @@ Unicode-aware slug generation for URL-safe strings.
 
 ```toml
 [dependencies]
-philiprehberger-slug = "0.1"
+philiprehberger-slug = "0.1.5"
 ```
 
 ## Usage
