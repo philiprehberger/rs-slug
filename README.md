@@ -3,6 +3,7 @@
 [![CI](https://github.com/philiprehberger/rs-slug/actions/workflows/ci.yml/badge.svg)](https://github.com/philiprehberger/rs-slug/actions/workflows/ci.yml)
 [![Crates.io](https://img.shields.io/crates/v/philiprehberger-slug.svg)](https://crates.io/crates/philiprehberger-slug)
 [![License](https://img.shields.io/github/license/philiprehberger/rs-slug)](LICENSE)
+[![Sponsor](https://img.shields.io/badge/sponsor-GitHub%20Sponsors-ec6cb9)](https://github.com/sponsors/philiprehberger)
 
 Unicode-aware slug generation for URL-safe strings
 
