@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.7 (2026-03-27)
+
+- Add GitHub issue templates, PR template, and dependabot configuration
+- Update README badges and add Support section
+
 ## 0.1.6 (2026-03-17)
 
 - Add readme, rust-version, documentation to Cargo.toml
