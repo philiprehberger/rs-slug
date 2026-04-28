@@ -10,7 +10,7 @@ Unicode-aware slug generation for URL-safe strings
 
 ```toml
 [dependencies]
-philiprehberger-slug = "0.1.7"
+philiprehberger-slug = "0.2.0"
 ```
 
 ## Usage
@@ -33,15 +33,55 @@ let slug = SlugBuilder::new()
     .slugify("A Very Long Title That Should Be Truncated");
 ```
 
+### Cyrillic and Greek
+
+```rust
+use philiprehberger_slug::slugify;
+
+assert_eq!(slugify("Привет мир"), "privet-mir");
+assert_eq!(slugify("Αθήνα"), "athina");
+```
+
+### Preserve case
+
+```rust
+use philiprehberger_slug::SlugBuilder;
+
+let slug = SlugBuilder::new().lowercase(false).slugify("Hello World");
+assert_eq!(slug, "Hello-World");
+```
+
+### Strict ASCII output
+
+```rust
+use philiprehberger_slug::SlugBuilder;
+
+// Drop characters with no transliteration mapping
+let slug = SlugBuilder::new().ascii_only(true).slugify("hello 🚀 world");
+assert_eq!(slug, "hello-world");
+```
+
+### Validate a slug
+
+```rust
+use philiprehberger_slug::is_valid_slug;
+
+assert!(is_valid_slug("hello-world"));
+assert!(!is_valid_slug("Hello World"));
+```
+
 ## API
 
 | Function / Type | Description |
 |-----------------|-------------|
 | `slugify(input)` | Convert a string to a URL-safe slug |
+| `is_valid_slug(s)` | Check whether a string is already a valid default-format slug |
 | `SlugBuilder::new()` | Create a configurable slug builder |
 | `.separator(char)` | Set the separator character (default: `-`) |
 | `.max_length(usize)` | Set maximum slug length with word-boundary truncation |
 | `.replacement(char, &str)` | Add a custom character replacement |
+| `.lowercase(bool)` | Toggle ASCII lowercasing (default `true`) |
+| `.ascii_only(bool)` | Drop characters with no ASCII transliteration (default `false`) |
 | `.slugify(&self, input)` | Generate a slug with the configured settings |
 
 ## Development

@@ -1,6 +1,6 @@
 [package]
 name = "philiprehberger-slug"
-version = "0.1.8"
+version = "0.2.0"
 edition = "2021"
 authors = ["Philip Rehberger"]
 description = "Unicode-aware slug generation for URL-safe strings"

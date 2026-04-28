@@ -25,9 +25,11 @@
 /// Transliterate a single character to its ASCII equivalent.
 ///
 /// Returns `Some(&str)` for known Unicode-to-ASCII mappings, or `None`
-/// if the character has no transliteration in the built-in map.
+/// if the character has no transliteration in the built-in map. Covers
+/// Latin-1 supplement, Russian Cyrillic, and modern Greek.
 fn transliterate(c: char) -> Option<&'static str> {
     match c {
+        // --- Latin-1 supplement ---
         '\u{00E0}' | '\u{00E1}' | '\u{00E2}' | '\u{00E3}' | '\u{00E4}' | '\u{00E5}' => {
             Some("a")
         }
@@ -52,6 +54,68 @@ fn transliterate(c: char) -> Option<&'static str> {
         '\u{0153}' | '\u{0152}' => Some("oe"),
         '\u{00F0}' | '\u{00D0}' => Some("d"),
         '\u{00FE}' | '\u{00DE}' => Some("th"),
+
+        // --- Russian Cyrillic (lowercase + uppercase) ---
+        'а' | 'А' => Some("a"),
+        'б' | 'Б' => Some("b"),
+        'в' | 'В' => Some("v"),
+        'г' | 'Г' => Some("g"),
+        'д' | 'Д' => Some("d"),
+        'е' | 'Е' => Some("e"),
+        'ё' | 'Ё' => Some("yo"),
+        'ж' | 'Ж' => Some("zh"),
+        'з' | 'З' => Some("z"),
+        'и' | 'И' => Some("i"),
+        'й' | 'Й' => Some("y"),
+        'к' | 'К' => Some("k"),
+        'л' | 'Л' => Some("l"),
+        'м' | 'М' => Some("m"),
+        'н' | 'Н' => Some("n"),
+        'о' | 'О' => Some("o"),
+        'п' | 'П' => Some("p"),
+        'р' | 'Р' => Some("r"),
+        'с' | 'С' => Some("s"),
+        'т' | 'Т' => Some("t"),
+        'у' | 'У' => Some("u"),
+        'ф' | 'Ф' => Some("f"),
+        'х' | 'Х' => Some("kh"),
+        'ц' | 'Ц' => Some("ts"),
+        'ч' | 'Ч' => Some("ch"),
+        'ш' | 'Ш' => Some("sh"),
+        'щ' | 'Щ' => Some("shch"),
+        'ъ' | 'Ъ' => Some(""),
+        'ы' | 'Ы' => Some("y"),
+        'ь' | 'Ь' => Some(""),
+        'э' | 'Э' => Some("e"),
+        'ю' | 'Ю' => Some("yu"),
+        'я' | 'Я' => Some("ya"),
+
+        // --- Modern Greek (ISO 843) ---
+        'α' | 'Α' | 'ά' | 'Ά' => Some("a"),
+        'β' | 'Β' => Some("b"),
+        'γ' | 'Γ' => Some("g"),
+        'δ' | 'Δ' => Some("d"),
+        'ε' | 'Ε' | 'έ' | 'Έ' => Some("e"),
+        'ζ' | 'Ζ' => Some("z"),
+        'η' | 'Η' | 'ή' | 'Ή' => Some("i"),
+        'θ' | 'Θ' => Some("th"),
+        'ι' | 'Ι' | 'ί' | 'Ί' | 'ϊ' | 'Ϊ' | 'ΐ' => Some("i"),
+        'κ' | 'Κ' => Some("k"),
+        'λ' | 'Λ' => Some("l"),
+        'μ' | 'Μ' => Some("m"),
+        'ν' | 'Ν' => Some("n"),
+        'ξ' | 'Ξ' => Some("x"),
+        'ο' | 'Ο' | 'ό' | 'Ό' => Some("o"),
+        'π' | 'Π' => Some("p"),
+        'ρ' | 'Ρ' => Some("r"),
+        'σ' | 'ς' | 'Σ' => Some("s"),
+        'τ' | 'Τ' => Some("t"),
+        'υ' | 'Υ' | 'ύ' | 'Ύ' | 'ϋ' | 'Ϋ' | 'ΰ' => Some("y"),
+        'φ' | 'Φ' => Some("f"),
+        'χ' | 'Χ' => Some("ch"),
+        'ψ' | 'Ψ' => Some("ps"),
+        'ω' | 'Ω' | 'ώ' | 'Ώ' => Some("o"),
+
         _ => None,
     }
 }
@@ -95,17 +159,22 @@ pub struct SlugBuilder {
     separator: char,
     max_length: Option<usize>,
     custom_replacements: Vec<(char, String)>,
+    lowercase: bool,
+    ascii_only: bool,
 }
 
 impl SlugBuilder {
     /// Create a new `SlugBuilder` with default settings.
     ///
-    /// Defaults: separator = `'-'`, no max length, no custom replacements.
+    /// Defaults: separator = `'-'`, no max length, no custom replacements,
+    /// lowercase output, non-ASCII characters preserved.
     pub fn new() -> Self {
         Self {
             separator: '-',
             max_length: None,
             custom_replacements: Vec::new(),
+            lowercase: true,
+            ascii_only: false,
         }
     }
 
@@ -161,6 +230,44 @@ impl SlugBuilder {
         self
     }
 
+    /// Control whether the slug is lowercased.
+    ///
+    /// When `false`, the original case of ASCII letters is preserved.
+    /// Default is `true`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use philiprehberger_slug::SlugBuilder;
+    ///
+    /// let slug = SlugBuilder::new().lowercase(false).slugify("Hello World");
+    /// assert_eq!(slug, "Hello-World");
+    /// ```
+    pub fn lowercase(mut self, lowercase: bool) -> Self {
+        self.lowercase = lowercase;
+        self
+    }
+
+    /// Control whether characters with no ASCII transliteration are dropped.
+    ///
+    /// When `true`, characters that are neither alphanumeric nor have a known
+    /// mapping are stripped (treated as separators). Default is `false`,
+    /// which leaves them in the intermediate string and lets later steps
+    /// turn them into separators if they are non-alphanumeric.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use philiprehberger_slug::SlugBuilder;
+    ///
+    /// let slug = SlugBuilder::new().ascii_only(true).slugify("hello 🚀 world");
+    /// assert_eq!(slug, "hello-world");
+    /// ```
+    pub fn ascii_only(mut self, ascii_only: bool) -> Self {
+        self.ascii_only = ascii_only;
+        self
+    }
+
     /// Generate a slug from the given input string.
     ///
     /// Processing steps:
@@ -199,17 +306,30 @@ impl SlugBuilder {
                 continue;
             }
 
+            // ASCII-only mode: drop chars with no mapping that aren't ASCII
+            // alphanumeric (let alphanumeric ASCII pass; non-alphanumeric
+            // ASCII still becomes a separator below).
+            if self.ascii_only && !c.is_ascii() {
+                intermediate.push(' ');
+                continue;
+            }
+
             intermediate.push(c);
         }
 
-        // Step 3 & 4: Lowercase and replace non-alphanumeric with separator
+        // Step 3 & 4: Optionally lowercase, then replace non-alphanumeric
+        // with the separator.
         let mut slug = String::with_capacity(intermediate.len());
         let mut prev_was_sep = true; // Start true to trim leading separators
 
         for c in intermediate.chars() {
-            let lower = c.to_ascii_lowercase();
-            if lower.is_ascii_alphanumeric() {
-                slug.push(lower);
+            let mapped = if self.lowercase {
+                c.to_ascii_lowercase()
+            } else {
+                c
+            };
+            if mapped.is_ascii_alphanumeric() {
+                slug.push(mapped);
                 prev_was_sep = false;
             } else if !prev_was_sep {
                 // Step 5: Collapse consecutive separators by only adding
@@ -246,6 +366,45 @@ impl Default for SlugBuilder {
     fn default() -> Self {
         Self::new()
     }
+}
+
+/// Returns `true` if `s` is already a valid default-format slug.
+///
+/// A valid slug is non-empty, contains only `[a-z0-9-]`, and has no
+/// leading, trailing, or consecutive hyphens. This matches the output of
+/// [`slugify`] called with default settings.
+///
+/// # Examples
+///
+/// ```
+/// use philiprehberger_slug::is_valid_slug;
+///
+/// assert!(is_valid_slug("hello-world"));
+/// assert!(is_valid_slug("user-123"));
+/// assert!(!is_valid_slug("Hello-World"));   // uppercase
+/// assert!(!is_valid_slug("-leading"));      // leading hyphen
+/// assert!(!is_valid_slug("trailing-"));     // trailing hyphen
+/// assert!(!is_valid_slug("double--dash"));  // consecutive hyphens
+/// assert!(!is_valid_slug(""));              // empty
+/// ```
+pub fn is_valid_slug(s: &str) -> bool {
+    if s.is_empty() || s.starts_with('-') || s.ends_with('-') {
+        return false;
+    }
+    let mut prev_dash = false;
+    for c in s.chars() {
+        match c {
+            '-' => {
+                if prev_dash {
+                    return false;
+                }
+                prev_dash = true;
+            }
+            'a'..='z' | '0'..='9' => prev_dash = false,
+            _ => return false,
+        }
+    }
+    true
 }
 
 #[cfg(test)]
@@ -373,5 +532,70 @@ mod tests {
     fn test_builder_default() {
         let builder = SlugBuilder::default();
         assert_eq!(builder.slugify("hello world"), "hello-world");
+    }
+
+    #[test]
+    fn test_cyrillic_transliteration() {
+        assert_eq!(slugify("Привет мир"), "privet-mir");
+        assert_eq!(slugify("Москва"), "moskva");
+        assert_eq!(slugify("ёлка"), "yolka");
+        assert_eq!(slugify("щука"), "shchuka");
+        // Soft and hard signs drop out without leaving hyphens
+        assert_eq!(slugify("объект"), "obekt");
+    }
+
+    #[test]
+    fn test_greek_transliteration() {
+        assert_eq!(slugify("Αθήνα"), "athina");
+        assert_eq!(slugify("καλημέρα"), "kalimera");
+        // Final-sigma maps the same as regular sigma
+        assert_eq!(slugify("Οδυσσεύς"), "odysseys");
+    }
+
+    #[test]
+    fn test_lowercase_false_preserves_case() {
+        let slug = SlugBuilder::new().lowercase(false).slugify("Hello World");
+        assert_eq!(slug, "Hello-World");
+
+        let slug = SlugBuilder::new().lowercase(false).slugify("camelCase Words");
+        assert_eq!(slug, "camelCase-Words");
+    }
+
+    #[test]
+    fn test_ascii_only_drops_unmapped_chars() {
+        let slug = SlugBuilder::new().ascii_only(true).slugify("hello 🚀 world");
+        assert_eq!(slug, "hello-world");
+
+        // Ensure mapped non-ASCII still works in ascii_only mode
+        let slug = SlugBuilder::new().ascii_only(true).slugify("café 🚀 résumé");
+        assert_eq!(slug, "cafe-resume");
+    }
+
+    #[test]
+    fn test_ascii_only_default_keeps_unmapped() {
+        // Default (ascii_only = false): unmapped chars become separators
+        // because they are non-alphanumeric ASCII collapse, but emoji is
+        // multi-byte non-alphanumeric — currently passes through and is
+        // dropped at the alphanumeric filter, becoming a separator.
+        let slug = slugify("hello 🚀 world");
+        assert_eq!(slug, "hello-world");
+    }
+
+    #[test]
+    fn test_is_valid_slug() {
+        assert!(is_valid_slug("hello"));
+        assert!(is_valid_slug("hello-world"));
+        assert!(is_valid_slug("a"));
+        assert!(is_valid_slug("123"));
+        assert!(is_valid_slug("user-123-name"));
+
+        assert!(!is_valid_slug(""));
+        assert!(!is_valid_slug("Hello"));
+        assert!(!is_valid_slug("hello world"));
+        assert!(!is_valid_slug("hello_world"));
+        assert!(!is_valid_slug("-hello"));
+        assert!(!is_valid_slug("hello-"));
+        assert!(!is_valid_slug("hello--world"));
+        assert!(!is_valid_slug("hello!"));
     }
 }

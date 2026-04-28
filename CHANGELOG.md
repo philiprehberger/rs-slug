@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.0 (2026-04-27)
+
+- Add Russian Cyrillic transliteration (full alphabet, both cases)
+- Add modern Greek transliteration following ISO 843
+- Add `SlugBuilder::lowercase(bool)` to preserve original case
+- Add `SlugBuilder::ascii_only(bool)` to drop unmapped non-ASCII characters
+- Add top-level `is_valid_slug()` validator
+
 ## 0.1.8 (2026-03-31)
 
 - Standardize README to 3-badge format with emoji Support section
